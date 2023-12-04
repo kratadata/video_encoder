@@ -1,5 +1,5 @@
 # video_encoder
- Encoding videos to audio
+ Encode videos to audio
 
 1. Download this folder by clicking on Code --> Download Zip and unzip it
 2. Download the python environment folder from here and unzip it inside of video_encoder folder 
