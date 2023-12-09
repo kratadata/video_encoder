@@ -2,7 +2,6 @@ import gradio as gr
 import enc
 
 def processFrames(frames, fps, lines, pulselength):
-    # print(i.name for i in frames)
     enc.video2audio(frames, fps, lines, pulselength)
     return "DONE!"
 

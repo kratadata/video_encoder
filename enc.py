@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import cv2
 import numpy as np
 import soundfile
 from PIL import Image
@@ -14,6 +15,10 @@ oversample = 0
 lines = 0
 pulse = 0
 quiet = 0
+frames_dir = ""
+curr_dir = os.getcwd()
+output_dir = curr_dir + "/outputs"
+
 def encode(image, field):
 	global width, oversample, lines, pulse, quiet
 	image = image.resize((round(width * oversample), lines))
@@ -77,19 +82,35 @@ def encode(image, field):
 
 	return np.stack([left, right], 1)
 
-def video2audio(inputs, fps, ls, pl):
 
-	# parser.add_argument('-i', '--input', required=True, action='append', dest='inputs', help='input file pattern(s)', type=str )
-	#parser.add_argument('outfile', type=argparse.FileType( 'wb' ) )
+def extract_image_one_fps(video_source_path):
+	global frames_dir
+	dir_path = os.path.dirname(os.path.realpath(video_source_path))
+	frames_dir = dir_path + "/output_frames"
 
-	#parser.add_argument('-r', '--rate', dest='rate', action='store', help='sample rate', default=c, type=int)
-	#parser.add_argument('-f', '--fps', dest='fps', action='store', help='frames per second', default=3, type=float)
-	#parser.add_argument('-l', '--lines', dest='lines', action='store', help='lines of resolution', default=150, type=int)
-	#parser.add_argument('-p', '--pulselength', dest='pulselength', action='store', help='length of sync pulses in ms', default=0.2, type=float)
-	#parser.add_argument('-o', '--oversample', dest='oversample', action='store', help='oversampling amount', default=10, type=int)
+	os.makedirs(frames_dir, exist_ok=True)
+	videocap = cv2.VideoCapture(video_source_path)
+	count = 0
+	success = True
+	while success:
+		videocap.set(cv2.CAP_PROP_POS_MSEC,(count*1000))
+		success,image = videocap.read()
 
-	#args = parser.parse_args()
-	global width, lines, oversample
+		## Stop when last frame is identified
+		image_last = cv2.imread("frame{}.png".format(count-1))
+		if np.array_equal(image,image_last):
+			break
+
+		cv2.imwrite(os.path.join(frames_dir, "frame%d.png" % count), image)     # save frame as PNG file
+		print('{}.sec reading a new frame: {} '.format(count,success))
+		count += 1
+
+
+
+def video2audio(input, fps, ls, pl):
+	global width, lines, oversample, frames_dir
+
+	##extract_image_one_fps(input)
 
 	sample_rate = 96000
 	oversample = 10
@@ -115,10 +136,10 @@ def video2audio(inputs, fps, ls, pl):
 	pulse = np.full(round(pulse_length * sample_rate * oversample), 1.0)
 	quiet = np.zeros(round(pulse_length * sample_rate * oversample))
 
-	file_name = os.path.splitext(os.path.basename(inputs[0]))[0] + ".wav"
-	output_json = os.path.splitext(os.path.basename(inputs[0]))[0] + ".json"
+	file_name = os.path.splitext(os.path.basename(input[0]))[0] + ".wav"
+	output_json = os.path.splitext(os.path.basename(input[0]))[0] + ".json"
 
-	with open(output_json, 'w') as json_file:
+	with open(os.path.join(output_dir, output_json), 'w') as json_file:
 		info_data = {
 			"hf": 1.0 / h_time,
 			"vf": fps,
@@ -128,17 +149,17 @@ def video2audio(inputs, fps, ls, pl):
 		}
 		json.dump(info_data, json_file, indent=2)
 
-	with soundfile.SoundFile(file_name, 'w',  sample_rate, 2, 'FLOAT') as outFile:
+	with soundfile.SoundFile(os.path.join(output_dir, file_name), 'w',  sample_rate, 2, 'FLOAT') as outFile:
 		outFile.write(np.zeros((sample_rate, 2)))
 		print("Encoding...")
 		count = 0
 
-		for imageFile in inputs:
+		for imageFile in input:
 			image = Image.open(imageFile)
-			print("\rProcessing {}/{} frames".format(count+1, len(inputs)), end='')
+			print("\rProcessing {}/{} frames".format(count+1, len(input)), end='')
 
 			if count % 2 == 0:
-					field = 0
+				field = 0
 			else:
 				field = 1
 
