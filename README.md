@@ -4,8 +4,8 @@ This repo contains UI and slighly modified code from [Cassette-Video-Encoder](ht
 # Instructions
 1. Install [Python 3.10](https://www.python.org/downloads/release/python-3100/). Make sure to mark the **Add Python 3.10 to PATH** checkbox!
 1. Download this repository by clicking on Code --> Download ZIP and unzip it.
-2. Windows Key + R, then type "cmd". Once cmd is open type:
- `python --version` . If it shows 3.10 you are good to go.
+2. Open cmd (Windows Key + R, then "cmd") and type:  
+ `python --version` . If it shows 3.10 you are good to go. If not follow [these instructions](https://youtu.be/Y2q_b4ugPWk?feature=shared)
 3. In cmd type (if pip doesn't work try pip3):   
   `cd path/to/video_encoder`   
   `pip install virtualenv`  
